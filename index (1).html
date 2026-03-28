@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>67 | HYPER-DIGITAL MEME GENERATOR</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800;900&family=Be+Vietnam+Pro:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        colors: {
+          "primary-container": "#cafd00",
+          "on-primary-fixed": "#3a4a00",
+          "primary-fixed": "#cafd00",
+          "primary-fixed-dim": "#beee00",
+          "secondary-dim": "#d277ff",
+          "secondary": "#d277ff",
+          "tertiary-fixed": "#84b1ff",
+          "outline": "#767575",
+          "outline-variant": "#484847",
+          "surface": "#0e0e0e",
+          "surface-container": "#1a1919",
+          "surface-container-low": "#131313",
+          "surface-container-high": "#201f1f",
+          "surface-container-highest": "#262626",
+          "on-surface": "#ffffff",
+          "on-surface-variant": "#adaaaa",
+          "background": "#0e0e0e",
+          "on-background": "#ffffff",
+          "error-dim": "#d53d18",
+        },
+        fontFamily: {
+          "headline": ["Space Grotesk"],
+          "body": ["Be Vietnam Pro"],
+        },
+      },
+    },
+  }
+</script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --lime: #cafd00;
+    --purple: #d277ff;
+    --blue: #5f9eff;
+    --red: #ff4444;
+    --orange: #ff8c00;
+    --cyan: #00ffea;
+    --pink: #ff2d78;
+    --white: #ffffff;
+  }
+
+  body {
+    background: #0e0e0e;
+    color: #fff;
+    font-family: 'Be Vietnam Pro', sans-serif;
+    overflow: hidden;
+    height: 100dvh;
+    min-height: 700px;
+  }
+
+  .material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  }
+
+  /* ─── Screen system ─── */
+  .screen {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.5s ease;
+    z-index: 1;
+  }
+  .screen.active {
+    opacity: 1;
+    pointer-events: all;
+    z-index: 2;
+  }
+
+  /* ─── Watermark ─── */
+  .wm {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2rem;
+    padding: 2rem;
+    transform: rotate(6.7deg) scale(1.3);
+    opacity: 0.03;
+    z-index: 0;
+  }
+  .wm span {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 900;
+    font-size: 11rem;
+    line-height: 1;
+    color: white;
+    user-select: none;
+  }
+
+  /* ══════════════════════════════════
+     LOADING SCREEN
+  ══════════════════════════════════ */
+  @keyframes glitch-skew {
+    0%   { transform: skew(0deg) scaleX(1); }
+    15%  { transform: skew(-4deg) scaleX(1.02); }
+    30%  { transform: skew(4deg) scaleX(0.98); }
+    50%  { transform: skew(-2deg) scaleX(1.01); }
+    70%  { transform: skew(2deg) scaleX(0.99); }
+    100% { transform: skew(0deg) scaleX(1); }
+  }
+  @keyframes flicker {
+    0%,100% { opacity: 1; }
+    8%  { opacity: 0.75; }
+    18% { opacity: 1; }
+    28% { opacity: 0.85; }
+    40% { opacity: 1; }
+    52% { opacity: 0.6; }
+    62% { opacity: 1; }
+  }
+  @keyframes progress-fill {
+    0%   { width: 0%; }
+    60%  { width: 75%; }
+    85%  { width: 92%; }
+    100% { width: 100%; }
+  }
+  @keyframes dot-blink {
+    0%,100% { opacity: 0.2; }
+    50%     { opacity: 1; }
+  }
+  @keyframes ping {
+    75%,100% { transform: scale(2.5); opacity: 0; }
+  }
+  @keyframes bounce-y {
+    0%,100% { transform: translateY(0); }
+    50%     { transform: translateY(-10px); }
+  }
+
+  .logo-glitch { animation: glitch-skew 0.9s infinite linear alternate-reverse, flicker 0.15s infinite; }
+  .text-glow   { text-shadow: 0 0 25px rgba(202,253,0,0.7), 0 0 60px rgba(202,253,0,0.35); }
+  .progress-bar { animation: progress-fill 2.6s ease-out forwards; }
+
+  .glitch-layer-a {
+    position: absolute; inset: 0;
+    font-family: 'Space Grotesk', sans-serif; font-weight: 900; font-style: italic;
+    color: #d277ff; opacity: 0.35; transform: translateX(7px);
+    mix-blend-mode: screen; pointer-events: none;
+    animation: flicker 0.3s infinite alternate;
+  }
+  .glitch-layer-b {
+    position: absolute; inset: 0;
+    font-family: 'Space Grotesk', sans-serif; font-weight: 900; font-style: italic;
+    color: #5f9eff; opacity: 0.35; transform: translateX(-7px);
+    mix-blend-mode: screen; pointer-events: none;
+    animation: flicker 0.25s infinite alternate-reverse;
+  }
+
+  /* corner accents */
+  .corner { position: fixed; z-index: 60; }
+  .corner-tl { top: 14px; left: 14px; }
+  .corner-br { bottom: 14px; right: 14px; }
+
+  /* ══════════════════════════════════
+     GENERATOR SCREEN
+  ══════════════════════════════════ */
+  .gen-body { overflow-y: auto; flex: 1; }
+  .gen-body::-webkit-scrollbar { display: none; }
+
+  .grid-bg {
+    background-image:
+      linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  /* display number bounce on generate */
+  @keyframes pop {
+    0%   { transform: scale(1); }
+    40%  { transform: scale(1.12); }
+    70%  { transform: scale(0.95); }
+    100% { transform: scale(1); }
+  }
+  .pop { animation: pop 0.35s ease-out; }
+
+  /* ── 20x multicolor strobe ── */
+  /* Button cycles through 8 colors × 20 flashes in 0.8s */
+  @keyframes btn-strobe {
+    0%        { background:var(--lime);   box-shadow:0 0 80px var(--lime),  0 0 0 0 transparent; }
+    2.5%      { background:var(--white);  box-shadow:0 0 0 300px rgba(255,255,255,0.6); }
+    5%        { background:var(--purple); box-shadow:0 0 80px var(--purple),0 0 0 0 transparent; }
+    7.5%      { background:var(--white);  box-shadow:0 0 0 300px rgba(255,255,255,0.6); }
+    10%       { background:var(--blue);   box-shadow:0 0 80px var(--blue),  0 0 0 0 transparent; }
+    12.5%     { background:var(--white);  box-shadow:0 0 0 300px rgba(255,255,255,0.6); }
+    15%       { background:var(--red);    box-shadow:0 0 80px var(--red),   0 0 0 0 transparent; }
+    17.5%     { background:var(--white);  box-shadow:0 0 0 300px rgba(255,255,255,0.6); }
+    20%       { background:var(--orange); box-shadow:0 0 80px var(--orange),0 0 0 0 transparent; }
+    22.5%     { background:var(--white);  box-shadow:0 0 0 300px rgba(255,255,255,0.6); }
+    25%       { background:var(--cyan);   box-shadow:0 0 80px var(--cyan),  0 0 0 0 transparent; }
+    27.5%     { background:var(--white);  box-shadow:0 0 0 300px rgba(255,255,255,0.6); }
+    30%       { background:var(--pink);   box-shadow:0 0 80px var(--pink),  0 0 0 0 transparent; }
+    32.5%     { background:var(--white);  box-shadow:0 0 0 300px rgba(255,255,255,0.6); }
+    35%       { background:var(--lime);   box-shadow:0 0 80px var(--lime),  0 0 0 0 transparent; }
+    37.5%     { background:var(--white);  box-shadow:0 0 0 300px rgba(255,255,255,0.6); }
+    40%       { background:var(--purple); box-shadow:0 0 80px var(--purple),0 0 0 0 transparent; }
+    42.5%     { background:var(--white);  box-shadow:0 0 0 300px rgba(255,255,255,0.6); }
+    45%       { background:var(--blue);   box-shadow:0 0 80px var(--blue),  0 0 0 0 transparent; }
+    47.5%     { background:var(--white);  box-shadow:0 0 0 300px rgba(255,255,255,0.6); }
+    50%       { background:var(--red);    box-shadow:0 0 80px var(--red),   0 0 0 0 transparent; }
+    52.5%     { background:var(--white);  box-shadow:0 0 0 300px rgba(255,255,255,0.6); }
+    55%       { background:var(--orange); box-shadow:0 0 80px var(--orange),0 0 0 0 transparent; }
+    57.5%     { background:var(--white);  box-shadow:0 0 0 300px rgba(255,255,255,0.6); }
+    60%       { background:var(--cyan);   box-shadow:0 0 80px var(--cyan),  0 0 0 0 transparent; }
+    62.5%     { background:var(--white);  box-shadow:0 0 0 300px rgba(255,255,255,0.6); }
+    65%       { background:var(--pink);   box-shadow:0 0 80px var(--pink),  0 0 0 0 transparent; }
+    67.5%     { background:var(--white);  box-shadow:0 0 0 300px rgba(255,255,255,0.6); }
+    70%       { background:var(--lime);   box-shadow:0 0 80px var(--lime),  0 0 0 0 transparent; }
+    72.5%     { background:var(--white);  box-shadow:0 0 0 300px rgba(255,255,255,0.6); }
+    75%       { background:var(--purple); box-shadow:0 0 80px var(--purple),0 0 0 0 transparent; }
+    77.5%     { background:var(--white);  box-shadow:0 0 0 300px rgba(255,255,255,0.6); }
+    80%       { background:var(--blue);   box-shadow:0 0 80px var(--blue),  0 0 0 0 transparent; }
+    82.5%     { background:var(--white);  box-shadow:0 0 0 300px rgba(255,255,255,0.6); }
+    85%       { background:var(--red);    box-shadow:0 0 80px var(--red),   0 0 0 0 transparent; }
+    87.5%     { background:var(--white);  box-shadow:0 0 0 300px rgba(255,255,255,0.6); }
+    90%       { background:var(--cyan);   box-shadow:0 0 80px var(--cyan),  0 0 0 0 transparent; }
+    92.5%     { background:var(--white);  box-shadow:0 0 0 300px rgba(255,255,255,0.6); }
+    95%       { background:var(--pink);   box-shadow:0 0 80px var(--pink),  0 0 0 0 transparent; }
+    97.5%     { background:var(--white);  box-shadow:0 0 0 300px rgba(255,255,255,0.6); }
+    100%      { background:var(--lime);   box-shadow:0 0 60px rgba(202,253,0,0.5); }
+  }
+
+  /* Full-screen overlay strobes matching the same 20 pulses */
+  @keyframes overlay-strobe {
+    0%,4%,9%,14%,19%,24%,29%,34%,39%,44%,49%,54%,59%,64%,69%,74%,79%,84%,89%,94%,99%,100% { opacity: 0; }
+    2.5%  { opacity:0.7; background:white; }
+    7.5%  { opacity:0.65; background:#d277ff; }
+    12.5% { opacity:0.7; background:#5f9eff; }
+    17.5% { opacity:0.65; background:white; }
+    22.5% { opacity:0.7; background:#ff4444; }
+    27.5% { opacity:0.65; background:#ff8c00; }
+    32.5% { opacity:0.7; background:white; }
+    37.5% { opacity:0.65; background:#00ffea; }
+    42.5% { opacity:0.7; background:#ff2d78; }
+    47.5% { opacity:0.65; background:white; }
+    52.5% { opacity:0.7; background:#cafd00; }
+    57.5% { opacity:0.65; background:#d277ff; }
+    62.5% { opacity:0.7; background:white; }
+    67.5% { opacity:0.65; background:#5f9eff; }
+    72.5% { opacity:0.7; background:#ff4444; }
+    77.5% { opacity:0.65; background:white; }
+    82.5% { opacity:0.7; background:#ff8c00; }
+    87.5% { opacity:0.65; background:#00ffea; }
+    92.5% { opacity:0.7; background:white; }
+    97.5% { opacity:0.65; background:#ff2d78; }
+  }
+
+  .btn-strobe { animation: btn-strobe 0.8s steps(1,end) forwards; pointer-events:none; }
+  #strobe-overlay {
+    position: fixed; inset: 0; z-index: 9999;
+    opacity: 0; pointer-events: none;
+  }
+  #strobe-overlay.active {
+    animation: overlay-strobe 0.8s steps(1,end) forwards;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar { width: 3px; }
+  .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+  .custom-scrollbar::-webkit-scrollbar-thumb { background: #484847; border-radius: 9999px; }
+
+  @keyframes fadeSlideIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .fade-in { animation: fadeSlideIn 0.3s ease forwards; }
+
+  @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════
+     STROBE OVERLAY (global)
+════════════════════════════════════════ -->
+<div id="strobe-overlay"></div>
+
+<!-- ════════════════════════════════════════
+     SCREEN 0 — LOADING
+════════════════════════════════════════ -->
+<div id="screen-loading" class="screen active" style="background:#0e0e0e;align-items:center;justify-content:center;">
+
+  <!-- Watermark -->
+  <div class="wm">
+    <span>67</span><span>67</span><span>67</span><span>67</span>
+    <span>67</span><span>67</span><span>67</span><span>67</span>
+    <span>67</span><span>67</span><span>67</span><span>67</span>
+  </div>
+
+  <!-- Central content -->
+  <div style="position:relative;z-index:10;display:flex;flex-direction:column;align-items:center;gap:2.5rem;">
+
+    <!-- Giant 67 logo -->
+    <div style="position:relative;">
+      <!-- glow blob -->
+      <div style="position:absolute;inset:0;background:rgba(202,253,0,0.18);filter:blur(90px);border-radius:9999px;pointer-events:none;"></div>
+      <!-- main number -->
+      <h1 class="logo-glitch text-glow"
+          style="font-size:clamp(9rem,22vw,20rem);font-family:'Space Grotesk',sans-serif;font-weight:900;font-style:italic;color:#cafd00;letter-spacing:-0.05em;line-height:1;position:relative;z-index:2;">
+        67
+      </h1>
+      <!-- chromatic glitch layers — same font size via CSS custom property trick -->
+      <div class="glitch-layer-a" style="font-size:clamp(9rem,22vw,20rem);line-height:1;letter-spacing:-0.05em;">67</div>
+      <div class="glitch-layer-b" style="font-size:clamp(9rem,22vw,20rem);line-height:1;letter-spacing:-0.05em;">67</div>
+    </div>
+
+    <!-- Status + progress -->
+    <div style="display:flex;flex-direction:column;align-items:center;gap:1rem;">
+      <div style="display:flex;align-items:center;gap:0.75rem;font-family:'Space Grotesk',sans-serif;font-weight:900;font-size:1.4rem;letter-spacing:0.2em;color:rgba(202,253,0,0.8);">
+        <span style="opacity:0.3;animation:dot-blink 1.2s 0s infinite;">67...</span>
+        <span style="opacity:0.6;animation:dot-blink 1.2s 0.4s infinite;">67...</span>
+        <span style="opacity:1; animation:dot-blink 1.2s 0.8s infinite;">67...</span>
+      </div>
+      <!-- Progress bar -->
+      <div style="width:18rem;height:4px;background:#262626;border-radius:9999px;overflow:hidden;position:relative;">
+        <div class="progress-bar" style="position:absolute;top:0;left:0;height:100%;width:0;background:#cafd00;border-radius:9999px;box-shadow:0 0 14px #cafd00;"></div>
+      </div>
+      <p style="font-size:0.6rem;font-family:'Space Grotesk',sans-serif;font-weight:700;letter-spacing:0.25em;color:#484847;text-transform:uppercase;">INITIALIZING HYPER-DIGITAL MATRIX</p>
+    </div>
+  </div>
+
+  <!-- Ambient gradient -->
+  <div style="position:absolute;bottom:0;left:0;width:100%;height:35%;background:linear-gradient(to top,rgba(202,253,0,0.04),transparent);pointer-events:none;"></div>
+
+  <!-- Floating particles -->
+  <div style="position:absolute;top:22%;left:3rem;width:10px;height:10px;border-radius:9999px;background:#d277ff;animation:ping 1.2s infinite;"></div>
+  <div style="position:absolute;bottom:22%;right:3rem;width:14px;height:14px;border-radius:9999px;background:#5f9eff;animation:pulse 2s infinite;"></div>
+  <div style="position:absolute;top:50%;right:6rem;width:6px;height:6px;border-radius:9999px;background:#cafd00;animation:bounce-y 1.4s infinite;"></div>
+  <div style="position:absolute;top:35%;right:15%;width:8px;height:8px;border-radius:9999px;background:#ff2d78;animation:ping 1.8s 0.5s infinite;"></div>
+  <div style="position:absolute;bottom:35%;left:15%;width:6px;height:6px;border-radius:9999px;background:#ff8c00;animation:bounce-y 1.6s 0.3s infinite;"></div>
+
+  <!-- Corner accents -->
+  <div class="corner corner-tl" style="display:flex;flex-direction:column;gap:4px;">
+    <div style="height:4px;width:3rem;background:#cafd00;"></div>
+    <div style="height:3rem;width:4px;background:#cafd00;"></div>
+  </div>
+  <div class="corner corner-br" style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+    <div style="height:3rem;width:4px;background:#cafd00;"></div>
+    <div style="height:4px;width:3rem;background:#cafd00;"></div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     SCREEN 1 — GENERATOR
+════════════════════════════════════════ -->
+<div id="screen-generator" class="screen" style="background:#0e0e0e;">
+
+  <!-- Header -->
+  <header style="flex-shrink:0;background:rgba(14,14,14,0.88);backdrop-filter:blur(24px);border-bottom:1px solid rgba(72,72,71,0.15);box-shadow:0 0 40px rgba(210,119,255,0.07);">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:1rem 1.5rem;max-width:80rem;margin:0 auto;">
+      <div style="display:flex;align-items:center;gap:0.5rem;">
+        <span class="material-symbols-outlined" style="color:#cafd00;font-size:1.4rem;">terminal</span>
+        <span style="font-size:2.2rem;font-weight:900;color:#cafd00;font-style:italic;font-family:'Space Grotesk',sans-serif;text-transform:uppercase;letter-spacing:-0.05em;line-height:1;">67</span>
+      </div>
+      <nav style="display:flex;gap:2rem;">
+        <span style="color:#cafd00;border-bottom:2px solid #cafd00;padding-bottom:3px;font-family:'Space Grotesk',sans-serif;font-weight:900;font-size:0.8rem;text-transform:uppercase;letter-spacing:0.05em;cursor:default;">Generator</span>
+      </nav>
+      <div style="font-family:'Space Grotesk',sans-serif;font-size:0.65rem;font-weight:700;color:#484847;letter-spacing:0.2em;text-transform:uppercase;" id="header-seed">SEED: #A7X99_67</div>
+    </div>
+  </header>
+
+  <!-- Scrollable body -->
+  <div class="gen-body">
+    <!-- bg decor -->
+    <div style="position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;">
+      <div style="position:absolute;top:4rem;left:-4rem;font-size:18rem;font-family:'Space Grotesk',sans-serif;font-weight:900;color:white;opacity:0.025;transform:rotate(6.7deg);line-height:1;user-select:none;">67</div>
+      <div style="position:absolute;bottom:6rem;right:-6rem;font-size:14rem;font-family:'Space Grotesk',sans-serif;font-weight:900;color:#d277ff;opacity:0.018;transform:rotate(-12deg);line-height:1;user-select:none;">VIRAL</div>
+    </div>
+
+    <div style="position:relative;z-index:10;padding:2rem 1.5rem 6rem;max-width:80rem;margin:0 auto;">
+      <div style="display:grid;grid-template-columns:1fr;gap:2rem;">
+
+        <!-- ── LEFT: Main interactive area ── -->
+        <div style="display:flex;flex-direction:column;gap:2rem;">
+
+          <!-- Display panel -->
+          <section style="position:relative;">
+            <div style="width:100%;aspect-ratio:21/9;min-height:180px;background:#131313;border-radius:1rem;display:flex;align-items:center;justify-content:center;overflow:hidden;border:1px solid rgba(72,72,71,0.12);position:relative;">
+              <div class="grid-bg" style="position:absolute;inset:0;opacity:0.25;"></div>
+              <!-- scan line -->
+              <div style="position:absolute;top:0;left:0;width:100%;height:2px;background:rgba(202,253,0,0.15);animation:scanline 4s linear infinite;"></div>
+              <div style="text-align:center;position:relative;z-index:10;padding:1.5rem;">
+                <h2 id="gen-number" class="text-glow"
+                    style="font-size:clamp(4.5rem,12vw,10rem);font-family:'Space Grotesk',sans-serif;font-weight:900;font-style:italic;color:#cafd00;letter-spacing:-0.05em;line-height:1;user-select:none;transition:opacity 0.15s;">
+                  67
+                </h2>
+                <p id="gen-text"
+                   style="font-family:'Space Grotesk',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:0.18em;color:#d277ff;margin-top:0.75rem;font-size:clamp(0.7rem,2vw,1.1rem);transition:opacity 0.15s;">
+                  ABSOLUTE CHAOS DETECTED
+                </p>
+              </div>
+              <!-- corner decorations on panel -->
+              <div style="position:absolute;top:12px;left:12px;width:20px;height:20px;border-top:2px solid rgba(202,253,0,0.3);border-left:2px solid rgba(202,253,0,0.3);"></div>
+              <div style="position:absolute;bottom:12px;right:12px;width:20px;height:20px;border-bottom:2px solid rgba(202,253,0,0.3);border-right:2px solid rgba(202,253,0,0.3);"></div>
+            </div>
+            <!-- meta stats -->
+            <div style="display:flex;justify-content:space-between;margin-top:0.75rem;font-family:'Space Grotesk',sans-serif;font-size:0.6rem;font-weight:700;color:#484847;text-transform:uppercase;letter-spacing:0.18em;padding:0 0.25rem;">
+              <span id="gen-latency">EST. LATENCY: 6.7ms</span>
+              <span id="gen-seed-display">SEED: #A7X99_67</span>
+              <span>GEN_TYPE: VIRAL_CORE</span>
+            </div>
+          </section>
+
+          <!-- GENERATE button -->
+          <div style="display:flex;flex-direction:column;align-items:center;gap:1.25rem;padding:1.5rem 0;">
+            <button id="gen-btn" onclick="runGenerator()"
+                    style="position:relative;padding:1.75rem 3rem;background:#cafd00;color:#3a4a00;border-radius:0.75rem;font-family:'Space Grotesk',sans-serif;font-size:clamp(1.6rem,4vw,2.5rem);font-weight:900;text-transform:uppercase;letter-spacing:-0.04em;overflow:hidden;border:none;cursor:pointer;box-shadow:0 0 60px rgba(202,253,0,0.45);transition:transform 0.1s;display:flex;align-items:center;gap:0.75rem;"
+                    onmouseover="if(!this.classList.contains('btn-strobe'))this.style.transform='skewX(-6.7deg)'"
+                    onmouseout="if(!this.classList.contains('btn-strobe'))this.style.transform='skewX(0)'">
+              <span style="position:relative;z-index:10;display:flex;align-items:center;gap:0.75rem;">
+                GENERATE 67
+                <span class="material-symbols-outlined" style="font-size:1.8rem;font-variation-settings:'wght' 700;">bolt</span>
+              </span>
+              <!-- sheen -->
+              <div id="btn-sheen" style="position:absolute;inset:0;background:rgba(255,255,255,0.25);transform:translateX(-200%) skewX(-20deg);pointer-events:none;"></div>
+            </button>
+            <p style="color:#767575;font-size:0.8rem;text-align:center;max-width:30rem;line-height:1.5;">
+              Press to generate a random high-intensity meme string. Results are final and statistically improbable.
+            </p>
+          </div>
+
+          <!-- Quick tool bento -->
+          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:1rem;">
+            <div onclick="copyMeme()" style="background:#1a1919;padding:1.25rem 1.5rem;border-radius:0.75rem;border:1px solid rgba(72,72,71,0.08);cursor:pointer;transition:background 0.2s;display:flex;flex-direction:column;gap:0.5rem;" onmouseover="this.style.background='#201f1f'" onmouseout="this.style.background='#1a1919'">
+              <span class="material-symbols-outlined" style="color:#d277ff;">content_copy</span>
+              <h4 style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;">Copy Meme</h4>
+              <p style="font-size:0.65rem;color:#767575;">Copy current string</p>
+            </div>
+            <div onclick="randomSeed()" style="background:#1a1919;padding:1.25rem 1.5rem;border-radius:0.75rem;border:1px solid rgba(72,72,71,0.08);cursor:pointer;transition:background 0.2s;display:flex;flex-direction:column;gap:0.5rem;" onmouseover="this.style.background='#201f1f'" onmouseout="this.style.background='#1a1919'">
+              <span class="material-symbols-outlined" style="color:#84b1ff;">shuffle</span>
+              <h4 style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;">Reseed</h4>
+              <p style="font-size:0.65rem;color:#767575;">New random seed</p>
+            </div>
+            <div style="background:#1a1919;padding:1.25rem 1.5rem;border-radius:0.75rem;border:1px solid rgba(72,72,71,0.08);cursor:pointer;transition:background 0.2s;display:flex;flex-direction:column;gap:0.5rem;" onmouseover="this.style.background='#201f1f'" onmouseout="this.style.background='#1a1919'">
+              <span class="material-symbols-outlined" style="color:#beee00;">settings_input_component</span>
+              <h4 style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;">Filters</h4>
+              <p style="font-size:0.65rem;color:#767575;">Adjust gen params</p>
+            </div>
+            <div style="background:#1a1919;padding:1.25rem 1.5rem;border-radius:0.75rem;border:1px solid rgba(72,72,71,0.08);cursor:pointer;transition:background 0.2s;display:flex;flex-direction:column;gap:0.5rem;" onmouseover="this.style.background='#201f1f'" onmouseout="this.style.background='#1a1919'">
+              <span class="material-symbols-outlined" style="color:#d53d18;">history</span>
+              <h4 style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;">History</h4>
+              <p style="font-size:0.65rem;color:#767575;">Last 10 generated</p>
+            </div>
+          </div>
+
+          <!-- History log -->
+          <div style="background:#131313;border-radius:0.75rem;padding:1.25rem 1.5rem;border:1px solid rgba(72,72,71,0.1);">
+            <h3 style="font-family:'Space Grotesk',sans-serif;font-weight:900;font-size:0.8rem;text-transform:uppercase;letter-spacing:0.15em;color:#adaaaa;margin-bottom:1rem;display:flex;align-items:center;gap:0.5rem;">
+              <span class="material-symbols-outlined" style="font-size:1rem;color:#d53d18;">history</span>
+              Recent Strings
+            </h3>
+            <div id="history-log" class="custom-scrollbar" style="display:flex;flex-direction:column;gap:0.5rem;max-height:160px;overflow-y:auto;">
+              <p style="font-size:0.75rem;color:#484847;font-style:italic;">No strings generated yet.</p>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- ── RIGHT: Sidebar ── -->
+        <aside style="display:flex;flex-direction:column;gap:1.5rem;">
+
+          <!-- Live metrics -->
+          <div style="background:#131313;border-radius:0.75rem;padding:1.5rem;border:1px solid rgba(72,72,71,0.1);">
+            <h3 style="font-family:'Space Grotesk',sans-serif;font-size:1.1rem;font-weight:900;text-transform:uppercase;letter-spacing:-0.03em;margin-bottom:1.25rem;display:flex;align-items:center;gap:0.5rem;">
+              <span style="width:8px;height:8px;background:#cafd00;border-radius:9999px;display:inline-block;flex-shrink:0;animation:pulse 1.5s infinite;"></span>
+              Live Metrics
+            </h3>
+            <div style="display:flex;flex-direction:column;gap:0.75rem;">
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:0.75rem;background:#1a1919;border-radius:0.5rem;">
+                <span style="font-size:0.6rem;font-weight:700;color:#adaaaa;text-transform:uppercase;letter-spacing:0.12em;">Total 67s</span>
+                <span id="total-count" style="font-family:'Space Grotesk',sans-serif;font-weight:900;color:#cafd00;font-size:1.1rem;">1.2M</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:0.75rem;background:#1a1919;border-radius:0.5rem;">
+                <span style="font-size:0.6rem;font-weight:700;color:#adaaaa;text-transform:uppercase;letter-spacing:0.12em;">This Session</span>
+                <span id="session-count" style="font-family:'Space Grotesk',sans-serif;font-weight:900;color:#d277ff;font-size:1.1rem;">0</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:0.75rem;background:#1a1919;border-radius:0.5rem;">
+                <span style="font-size:0.6rem;font-weight:700;color:#adaaaa;text-transform:uppercase;letter-spacing:0.12em;">Current Users</span>
+                <span style="font-family:'Space Grotesk',sans-serif;font-weight:900;color:#84b1ff;font-size:1.1rem;">6.7K</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:0.75rem;background:#1a1919;border-radius:0.5rem;">
+                <span style="font-size:0.6rem;font-weight:700;color:#adaaaa;text-transform:uppercase;letter-spacing:0.12em;">Hype Level</span>
+                <div style="display:flex;gap:3px;" id="hype-bars">
+                  <div style="width:14px;height:4px;background:#cafd00;border-radius:1px;"></div>
+                  <div style="width:14px;height:4px;background:#cafd00;border-radius:1px;"></div>
+                  <div style="width:14px;height:4px;background:#cafd00;border-radius:1px;opacity:0.3;"></div>
+                  <div style="width:14px;height:4px;background:#cafd00;border-radius:1px;opacity:0.3;"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Reaction stream -->
+          <div style="background:#131313;border-radius:0.75rem;padding:1.5rem;border:1px solid rgba(72,72,71,0.1);display:flex;flex-direction:column;min-height:280px;">
+            <h3 style="font-family:'Space Grotesk',sans-serif;font-size:1.1rem;font-weight:900;text-transform:uppercase;letter-spacing:-0.03em;color:#d277ff;margin-bottom:1rem;">Reaction Stream</h3>
+            <div id="reaction-stream" class="custom-scrollbar" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:0.75rem;padding-right:0.25rem;min-height:160px;">
+              <!-- pre-seeded reactions -->
+              <div style="display:flex;gap:0.6rem;align-items:flex-start;">
+                <div style="width:1.8rem;height:1.8rem;border-radius:9999px;background:#262626;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:'Space Grotesk',sans-serif;font-weight:900;font-size:0.6rem;color:#cafd00;">M</div>
+                <div>
+                  <div style="display:flex;align-items:center;gap:0.4rem;">
+                    <span style="font-size:0.55rem;font-weight:900;text-transform:uppercase;font-family:'Space Grotesk',sans-serif;">MemeLord_42</span>
+                    <span style="font-size:0.55rem;color:#484847;">2s ago</span>
+                  </div>
+                  <p style="font-size:0.8rem;color:#adaaaa;background:#1a1919;padding:0.4rem 0.6rem;border-radius:0.4rem;margin-top:0.2rem;border-left:2px solid #cafd00;">67 is the only valid number. No debate.</p>
+                </div>
+              </div>
+              <div style="display:flex;gap:0.6rem;align-items:flex-start;">
+                <div style="width:1.8rem;height:1.8rem;border-radius:9999px;background:#262626;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:'Space Grotesk',sans-serif;font-weight:900;font-size:0.6rem;color:#d277ff;">B</div>
+                <div>
+                  <div style="display:flex;align-items:center;gap:0.4rem;">
+                    <span style="font-size:0.55rem;font-weight:900;text-transform:uppercase;font-family:'Space Grotesk',sans-serif;">Bot67</span>
+                    <span style="font-size:0.55rem;color:#484847;">10s ago</span>
+                  </div>
+                  <p style="font-size:0.8rem;color:#adaaaa;background:#1a1919;padding:0.4rem 0.6rem;border-radius:0.4rem;margin-top:0.2rem;border-left:2px solid #d277ff;">GENERATING... HYPED.</p>
+                </div>
+              </div>
+            </div>
+            <!-- Input -->
+            <div style="margin-top:0.75rem;position:relative;">
+              <input id="reaction-input" type="text" placeholder="REACTION..."
+                     style="width:100%;background:#262626;border:none;border-radius:0.75rem;padding:0.65rem 2.5rem 0.65rem 0.9rem;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:0.8rem;color:white;text-transform:uppercase;outline:none;transition:box-shadow 0.2s;"
+                     onfocus="this.style.boxShadow='0 0 0 2px #cafd00'"
+                     onblur="this.style.boxShadow='none'"
+                     onkeydown="if(event.key==='Enter')sendReaction()"/>
+              <button onclick="sendReaction()" style="position:absolute;right:0.6rem;top:50%;transform:translateY(-50%);background:transparent;border:none;cursor:pointer;color:#cafd00;display:flex;align-items:center;">
+                <span class="material-symbols-outlined" style="font-size:1.2rem;">send</span>
+              </button>
+            </div>
+          </div>
+
+        </aside>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     SCAN LINE KEYFRAME
+════════════════════════════════════════ -->
+<style>
+@keyframes scanline {
+  0%   { top: 0%; opacity:0.6; }
+  50%  { opacity:0.2; }
+  100% { top: 100%; opacity:0.6; }
+}
+@keyframes dot-blink {
+  0%,100% { opacity:0.2; }
+  50%     { opacity:1; }
+}
+</style>
+
+<!-- ════════════════════════════════════════
+     JAVASCRIPT
+════════════════════════════════════════ -->
+<script>
+// ── Screen router ────────────────────────
+function switchScreen(to) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + to).classList.add('active');
+}
+
+// Boot: loading → generator after 3s
+window.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => switchScreen('generator'), 3000);
+});
+
+// ── 150 high-intensity meme strings ─────
+const MEMES = [
+  "ABSOLUTE CHAOS DETECTED",
+  "VIRAL OVERLOAD CONFIRMED",
+  "SIGMA ENERGY UNLOCKED",
+  "MAXIMUM GLITCH ACHIEVED",
+  "HYPER-REAL ZONE ENTERED",
+  "DIGITAL ASCENSION DETECTED",
+  "NEON PROTOCOL ACTIVATED",
+  "VOID BREACH INITIATED",
+  "CORE MELTDOWN IMMINENT",
+  "LEGENDARY SEED FOUND",
+  "GOLDEN 67 MANIFESTED",
+  "CHAOS SYSTEM ONLINE",
+  "BASED THRESHOLD EXCEEDED",
+  "NO CAP ENERGY DETECTED",
+  "RIZZ LEVEL CRITICAL",
+  "SLAY MODE ENGAGED",
+  "UNHINGED OUTPUT CONFIRMED",
+  "GLITCH ARC ACTIVATED",
+  "TERMINAL BRAINROT ACHIEVED",
+  "W ONLY. NO L POSSIBLE",
+  "CERTIFIED FREAK UNLOCKED",
+  "UNDERSTOOD THE ASSIGNMENT",
+  "VILLAIN ERA INITIATED",
+  "DELULU TO TRUELULU PIPELINE",
+  "BIG MEATY CLAWS DETECTED",
+  "CAUGHT IN 8K HDR FOOTAGE",
+  "SHEESH MAXIMUM REACHED",
+  "LOWKEY HIGHKEY GOING FERAL",
+  "RATIO INCOMING. BRACE BRACE",
+  "TOUCH GRASS PROTOCOL FAILED",
+  "MAIN CHARACTER SYNDROME PEAK",
+  "NPC BEHAVIOR OVERRIDE ACTIVE",
+  "CHRONICALLY ONLINE CONFIRMED",
+  "SENT TWEETING FROM THE VOID",
+  "ZERO CHILL DETECTED SYSTEM-WIDE",
+  "SCREAMING INTO THE ALGORITHM",
+  "LIVING IN THE UPSIDE-DOWN FEED",
+  "GASLIT BY THE MATRIX AGAIN",
+  "POSTING FROM A FEVER DREAM",
+  "ATTENTION SPAN: 0.67 SECONDS",
+  "DOPAMINE RECEPTORS FRIED",
+  "SIGMA GRINDSET CORRUPTED",
+  "BUILT DIFFERENT. WIRED WRONG",
+  "GALAXY BRAIN FULLY UNLOCKED",
+  "COOKING. NO ONE CAN STOP ME",
+  "IT GAVE WHAT IT WAS SUPPOSED TO GIVE",
+  "PURR PROTOCOL ENGAGED",
+  "ATE AND LEFT NO CRUMBS",
+  "CORE MEMORY DELETED",
+  "SPILLED THE TEA. IT WAS BOILING",
+  "THIS IS THE WAY. THE ONLY WAY",
+  "UNDERSTOOD NOTHING. VIBING HARD",
+  "CHAOS GOBLIN MODE: ACTIVATED",
+  "FERAL ON MAIN. UNASHAMED",
+  "ENTIRE SYSTEM SAID BESTIE",
+  "WENT FULL SEND. NO RETRIEVE",
+  "MOTHER I AM GOING FERAL",
+  "UNWELL BUT MAKE IT FASHION",
+  "SPIRAL BUT MAKE IT AESTHETIC",
+  "CLOCKED OUT OF REALITY",
+  "SIMULATION STARTED BUFFERING",
+  "ERROR 404: CHILL NOT FOUND",
+  "SERVING LOOKS FROM THE VOID",
+  "SLAYING THE ALGORITHM DEMON",
+  "CERTIFIED HOOD CLASSIC OUTPUT",
+  "GIGACHAD FREQUENCY DETECTED",
+  "MOGGING ALL COMPETITION",
+  "LORE DROPPED. NONE READY",
+  "PLOT TWIST OF THE MILLENNIUM",
+  "RED FLAG COLLECTION COMPLETE",
+  "MANIFESTING AT LIGHT SPEED",
+  "THAT GIRL ERA LOADING...",
+  "HOT GIRL SUMMER PROTOCOL",
+  "CHAOTIC NEUTRAL CONFIRMED",
+  "CHOOSE VIOLENCE SELECTED",
+  "SEROTONIN OFFLINE. POSTING ANYWAY",
+  "EXECUTIVE DYSFUNCTION ACTIVE",
+  "SLEEP DEPRIVED BUT INSPIRED",
+  "CAFFEINATED CHAOS ENGAGED",
+  "UNALIVED MY VILLAIN ORIGIN",
+  "TRAUMA RESPONSE: MEMES",
+  "THERAPY FUNDS REDIRECTED TO DRIP",
+  "RENT DUE. POSTING ANYWAY",
+  "BROKE BUT SWAG REMAINS",
+  "EATING GOOD IN THE NEIGHBORHOOD OF DOOM",
+  "CAUGHT THE VIBE. STILL CATCHING",
+  "VIBRATING AT A CHAOTIC FREQUENCY",
+  "EMOTIONAL SUPPORT CORRUPTED",
+  "TOUCHED GRASS. DID NOT HELP",
+  "OUTSIDE IS OVERRATED",
+  "INDOOR GREMLIN MODE: PEAK",
+  "HYDRATION FAILED. CHAOS CONTINUES",
+  "FORGOT TO EAT. REMEMBERED TO POST",
+  "LIVING ON SPITE AND AESTHETICS",
+  "WEAPONIZED INCOMPETENCE UNLOCKED",
+  "MALICIOUS COMPLIANCE ACHIEVED",
+  "PASSIVE AGGRESSIVE: MAXIMUM",
+  "BOUNDARIES LOADED. IGNORED",
+  "COMMUNICATING THROUGH MEMES ONLY",
+  "DICTIONARY OPEN TO UNHINGED",
+  "THESAURUS SAYS: COMPLETELY FERAL",
+  "ACADEMIC WEAPON TURNED CHAOS AGENT",
+  "STARTED STUDYING. ENDED POSTING",
+  "THE INTERNET RAISED ME. IT SHOWS",
+  "DIGITAL NATIVE. ANALOG FAILURE",
+  "BORN TOO LATE TO EXPLORE EARTH",
+  "BORN TOO EARLY TO EXPLORE SPACE",
+  "BORN EXACTLY RIGHT TO POST",
+  "TIMELINE FRACTURED. STILL HERE",
+  "MULTIVERSE OF MADNESS: MY FEED",
+  "STUCK IN A LOOP. LOVE IT HERE",
+  "GLITCHING BEAUTIFULLY",
+  "PIXELS CRYING. SO AM I",
+  "RENDERED AT MAX QUALITY UGLINESS",
+  "LOADING BAR STUCK AT 67%",
+  "CACHE CLEARED. PERSONALITY GONE",
+  "COOKIES ACCEPTED. SOUL SOLD",
+  "ALGORITHM FED. SATISFIED",
+  "ENGAGEMENT BAIT: SUCCESSFUL",
+  "IMPRESSIONS: IMMEASURABLE",
+  "REACH: EXTENDED BEYOND REASON",
+  "GOING VIRAL IN AN ALTERNATE TIMELINE",
+  "FAMOUS IN A POCKET DIMENSION",
+  "CELEBRATED IN THE FIFTH DIMENSION",
+  "PEAKED SIMULTANEOUSLY ACROSS REALITIES",
+  "INTERDIMENSIONAL POSTING DETECTED",
+  "TRANSCENDED THE PLATFORM",
+  "ASCENDED PAST THE ALGORITHM",
+  "BECAME THE CONTENT",
+  "CONTENT BECAME ME",
+  "WE ARE THE SAME. WE ARE 67",
+  "ENTROPY LEVEL: MAXIMUM",
+  "ORDER HAS LEFT THE CHAT",
+  "LOGIC KICKED OUT OF THE SERVER",
+  "REASON PERMA-BANNED",
+  "COMMON SENSE OFFLINE INDEFINITELY",
+  "CRITICAL THINKING: CORRUPTED",
+  "PLAUSIBILITY: SUSPENDED",
+  "REALITY: TEMPORARILY UNAVAILABLE",
+  "TRUTH: PENDING MODERATION",
+  "FACTS: AWAITING VIBE CHECK",
+  "VIBES: IMMACULATE",
+  "AURA: OVERFLOWING",
+  "DRIP: UNCONTAINABLE",
+  "SWAG: SYSTEM OVERFLOW",
+  "CHAOS: CALIBRATED",
+  "DESTRUCTION: SCHEDULED",
+  "MAYHEM: AUTHORIZED",
+  "PANDEMONIUM: APPROVED",
+  "BEDLAM: GREENLIT",
+  "ANARCHY: AESTHETIC",
+  "DISORDER: SERVED COLD",
+];
+
+const SEEDS = ['A7X99','Z3K01','Q8P12','M5T67','F2W34','X9L88','K4J55','B6N23','R7P00','T1M45','Y9G33','W6Z11'];
+const COLORS = ['#cafd00','#d277ff','#5f9eff','#ff4444','#ff8c00','#00ffea','#ff2d78'];
+
+let genCount = 1200000;
+let sessionCount = 0;
+let history = [];
+let lastMemeIdx = -1;
+
+function pickMeme() {
+  let idx;
+  do { idx = Math.floor(Math.random() * MEMES.length); } while (idx === lastMemeIdx);
+  lastMemeIdx = idx;
+  return MEMES[idx];
+}
+
+function pickSeed() {
+  const s = SEEDS[Math.floor(Math.random() * SEEDS.length)];
+  const n = Math.floor(Math.random() * 999).toString().padStart(2,'0');
+  return `#${s}_${n}`;
+}
+
+function runGenerator() {
+  const btn = document.getElementById('gen-btn');
+  if (btn.classList.contains('btn-strobe')) return;
+
+  // Strobe button
+  btn.classList.add('btn-strobe');
+  btn.addEventListener('animationend', () => {
+    btn.classList.remove('btn-strobe');
+    btn.style.transform = 'skewX(0)';
+  }, { once: true });
+
+  // Strobe overlay
+  const overlay = document.getElementById('strobe-overlay');
+  overlay.classList.add('active');
+  overlay.addEventListener('animationend', () => overlay.classList.remove('active'), { once: true });
+
+  // Update display mid-strobe
+  const numEl  = document.getElementById('gen-number');
+  const txtEl  = document.getElementById('gen-text');
+  const seedEl = document.getElementById('gen-seed-display');
+  const hdrSeed = document.getElementById('header-seed');
+  const latEl  = document.getElementById('gen-latency');
+
+  setTimeout(() => {
+    const meme = pickMeme();
+    const seed = pickSeed();
+    const latency = (Math.random() * 9 + 0.1).toFixed(1);
+    const color = COLORS[Math.floor(Math.random() * COLORS.length)];
+
+    numEl.style.opacity = '0';
+    txtEl.style.opacity = '0';
+    setTimeout(() => {
+      numEl.textContent = '67';
+      numEl.style.color = color;
+      numEl.style.textShadow = `0 0 25px ${color}99, 0 0 60px ${color}44`;
+      txtEl.textContent = meme;
+      txtEl.style.color = color === '#cafd00' ? '#d277ff' : '#cafd00';
+      seedEl.textContent = `SEED: ${seed}`;
+      hdrSeed.textContent = `SEED: ${seed}`;
+      latEl.textContent = `EST. LATENCY: ${latency}ms`;
+      numEl.style.opacity = '1';
+      txtEl.style.opacity = '1';
+      numEl.classList.remove('pop');
+      void numEl.offsetWidth;
+      numEl.classList.add('pop');
+    }, 80);
+
+    // Counters
+    genCount += Math.floor(Math.random() * 13) + 3;
+    sessionCount++;
+    document.getElementById('total-count').textContent = (genCount / 1000000).toFixed(1) + 'M';
+    document.getElementById('session-count').textContent = sessionCount;
+
+    // Hype bars
+    updateHype();
+
+    // History
+    addHistory(meme, seed);
+
+    // Auto reaction
+    addAutoReaction(meme);
+  }, 200);
+}
+
+function updateHype() {
+  const bars = document.getElementById('hype-bars').children;
+  const filled = Math.min(4, Math.floor(sessionCount / 3) + 1);
+  for (let i = 0; i < 4; i++) {
+    bars[i].style.opacity = i < filled ? '1' : '0.2';
+    bars[i].style.background = i < filled ? COLORS[i % COLORS.length] : '#cafd00';
+  }
+}
+
+function addHistory(meme, seed) {
+  history.unshift({ meme, seed });
+  if (history.length > 10) history.pop();
+  const log = document.getElementById('history-log');
+  log.innerHTML = history.map((h, i) => `
+    <div class="fade-in" style="display:flex;justify-content:space-between;align-items:center;padding:0.4rem 0.6rem;background:#1a1919;border-radius:0.4rem;border-left:2px solid ${COLORS[i%COLORS.length]};">
+      <span style="font-size:0.65rem;font-family:'Space Grotesk',sans-serif;font-weight:700;color:#adaaaa;text-transform:uppercase;letter-spacing:0.05em;">${h.meme}</span>
+      <span style="font-size:0.55rem;color:#484847;flex-shrink:0;margin-left:0.5rem;">${h.seed}</span>
+    </div>
+  `).join('');
+}
+
+const REACTION_NAMES = ['NeonGhost','Viral_K','Bot67','ChaosSpec','MemeLord_42','HyperGen','NULL_VOID','DigBrute','CodeAnon','67fan','ByteKing','GlitchQueen'];
+const REACTIONS = [
+  '67 is the truth 🔥','GOLDEN SEED!!!','generating again...',
+  'HYPED AF RN','this one hit different','maximum chaos fr',
+  'my eyes 💀','I am unwell and I love it','NO WAY. NO WAY.',
+  'bro really said 67 💀💀','the algorithm chose us',
+  'going feral over this','SHEESH 🔥🔥🔥','I felt that in my soul',
+  'clip clip clip clip','not me screaming at this',
+  'unhinged output detected','ok but why is this valid','certified banger',
+];
+
+function addAutoReaction(meme) {
+  const stream = document.getElementById('reaction-stream');
+  const name = REACTION_NAMES[Math.floor(Math.random() * REACTION_NAMES.length)];
+  const msg  = REACTIONS[Math.floor(Math.random() * REACTIONS.length)];
+  const color = COLORS[Math.floor(Math.random() * COLORS.length)];
+  const div = document.createElement('div');
+  div.className = 'fade-in';
+  div.style.cssText = 'display:flex;gap:0.6rem;align-items:flex-start;';
+  div.innerHTML = `
+    <div style="width:1.8rem;height:1.8rem;border-radius:9999px;background:#262626;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:'Space Grotesk',sans-serif;font-weight:900;font-size:0.6rem;color:${color};">${name[0]}</div>
+    <div>
+      <div style="display:flex;align-items:center;gap:0.4rem;">
+        <span style="font-size:0.55rem;font-weight:900;text-transform:uppercase;font-family:'Space Grotesk',sans-serif;">${name}</span>
+        <span style="font-size:0.55rem;color:#484847;">just now</span>
+      </div>
+      <p style="font-size:0.8rem;color:#adaaaa;background:#1a1919;padding:0.4rem 0.6rem;border-radius:0.4rem;margin-top:0.2rem;border-left:2px solid ${color};">${msg}</p>
+    </div>
+  `;
+  stream.appendChild(div);
+  stream.scrollTop = stream.scrollHeight;
+  while (stream.children.length > 12) stream.removeChild(stream.firstChild);
+}
+
+function sendReaction() {
+  const inp = document.getElementById('reaction-input');
+  const txt = inp.value.trim();
+  if (!txt) return;
+  const stream = document.getElementById('reaction-stream');
+  const div = document.createElement('div');
+  div.className = 'fade-in';
+  div.style.cssText = 'display:flex;gap:0.6rem;align-items:flex-start;';
+  div.innerHTML = `
+    <div style="width:1.8rem;height:1.8rem;border-radius:9999px;background:#cafd00;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:'Space Grotesk',sans-serif;font-weight:900;font-size:0.6rem;color:black;">Y</div>
+    <div>
+      <div style="display:flex;align-items:center;gap:0.4rem;">
+        <span style="font-size:0.55rem;font-weight:900;text-transform:uppercase;font-family:'Space Grotesk',sans-serif;">YOU</span>
+        <span style="font-size:0.55rem;color:#484847;">just now</span>
+      </div>
+      <p style="font-size:0.8rem;color:white;background:#1a1919;padding:0.4rem 0.6rem;border-radius:0.4rem;margin-top:0.2rem;border-left:2px solid #cafd00;">${txt}</p>
+    </div>
+  `;
+  stream.appendChild(div);
+  stream.scrollTop = stream.scrollHeight;
+  inp.value = '';
+}
+
+function copyMeme() {
+  const txt = document.getElementById('gen-text').textContent;
+  const seed = document.getElementById('gen-seed-display').textContent;
+  navigator.clipboard?.writeText(`67 — ${txt} | ${seed}`);
+}
+
+function randomSeed() {
+  const seed = pickSeed();
+  document.getElementById('gen-seed-display').textContent = `SEED: ${seed}`;
+  document.getElementById('header-seed').textContent = `SEED: ${seed}`;
+}
+</script>
+
+</body>
+</html>
